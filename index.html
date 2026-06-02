@@ -1,0 +1,715 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Re-Aim Check</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500;1,6..72,600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --charcoal:#333031; --shiraz:#7a2435; --lipstick:#b8455a; --blush:#e2b5b0;
+  --candlelight:#f3e9dc; --linen:#ffffff; --ink:#2a2728; --muted:#8a8083;
+  --line:#e7e2d8;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+body{font-family:'Inter',sans-serif; color:var(--ink); background:var(--candlelight);
+  line-height:1.6; letter-spacing:-0.01em; -webkit-font-smoothing:antialiased; padding:28px 18px 60px}
+.wrap{max-width:680px; margin:0 auto}
+
+/* shell card */
+.card{background:var(--linen); border:1px solid var(--line); border-radius:14px;
+  padding:42px 38px; box-shadow:0 18px 50px rgba(51,48,49,0.10)}
+
+/* header */
+.eyebrow{font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--lipstick);
+  font-weight:600; margin-bottom:14px}
+h1{font-family:'Newsreader',serif; font-weight:400; font-size:clamp(30px,5.4vw,42px);
+  line-height:1.08; letter-spacing:-0.02em; color:var(--ink); margin-bottom:12px}
+h1 em{font-style:italic; color:var(--shiraz)}
+.sub{font-size:16px; color:var(--muted); line-height:1.6; max-width:520px}
+
+/* progress */
+.prog{display:flex; gap:6px; margin:30px 0 8px}
+.prog span{height:4px; flex:1; background:var(--line); border-radius:99px; transition:background .3s}
+.prog span.on{background:var(--lipstick)}
+.qcount{font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); margin-bottom:26px}
+
+/* question */
+.qstem{font-family:'Newsreader',serif; font-size:25px; line-height:1.3; color:var(--ink);
+  margin-bottom:6px; letter-spacing:-0.01em}
+.qhint{font-size:14px; color:var(--muted); font-style:italic; margin-bottom:26px}
+.opts{display:flex; flex-direction:column; gap:12px}
+.opt{display:block; width:100%; text-align:left; background:var(--linen); border:1.5px solid var(--line);
+  border-radius:10px; padding:18px 20px; font-family:inherit; font-size:15.5px; color:var(--ink);
+  line-height:1.5; cursor:pointer; transition:border-color .16s, background .16s; position:relative}
+.opt:hover{border-color:var(--blush); background:#fdf8f7}
+.opt.sel{border-color:var(--shiraz); background:#fbf4f4}
+.opt b{display:block; font-weight:600; margin-bottom:2px}
+.opt span{color:var(--muted); font-size:13.5px}
+
+/* nav */
+.nav{display:flex; justify-content:space-between; align-items:center; margin-top:30px}
+.btn{background:var(--lipstick); color:var(--linen); border:none; border-radius:8px;
+  padding:15px 32px; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer;
+  transition:background .16s; letter-spacing:0.01em}
+.btn:hover{background:#a23a4e}
+.btn:disabled{opacity:.4; cursor:not-allowed}
+.back{background:none; border:none; color:var(--muted); font-family:inherit; font-size:14px;
+  cursor:pointer; padding:8px 4px; text-decoration:underline; text-underline-offset:3px}
+.back:hover{color:var(--ink)}
+.back.hide{visibility:hidden}
+
+/* intro + screens */
+.screen{display:none; animation:fade .35s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)}}
+.start-row{margin-top:30px}
+.note{font-size:13px; color:var(--muted); margin-top:18px; line-height:1.6}
+.note b{color:var(--ink); font-weight:600}
+
+/* result */
+.r-eyebrow{font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--lipstick);
+  font-weight:600; margin-bottom:16px}
+.r-band{border-radius:12px; padding:32px 30px; margin-bottom:26px; color:var(--candlelight); position:relative; overflow:hidden}
+.r-band.drift{background:var(--shiraz)}
+.r-band.depletion{background:var(--charcoal)}
+.r-band.misalignment{background:#5e1b29}
+.r-kicker{font-family:'Caveat',cursive; font-size:22px; color:var(--blush); margin-bottom:6px}
+.r-name{font-family:'Newsreader',serif; font-size:clamp(28px,5vw,38px); line-height:1.1;
+  color:var(--linen); margin-bottom:14px; letter-spacing:-0.01em}
+.r-name em{font-style:italic; color:var(--blush)}
+.r-desc{font-size:15.5px; color:rgba(243,233,220,0.88); line-height:1.7}
+.r-split{font-size:13px; color:rgba(243,233,220,0.7); margin-top:16px; padding-top:16px;
+  border-top:1px solid rgba(226,181,176,0.3); line-height:1.6}
+
+.r-move{margin-bottom:8px}
+.r-move .small-head{font-size:11px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--shiraz); font-weight:600; margin-bottom:10px}
+.r-move h3{font-family:'Newsreader',serif; font-weight:400; font-size:24px; line-height:1.25;
+  color:var(--ink); margin-bottom:14px}
+.r-move h3 em{font-style:italic; color:var(--shiraz)}
+.r-steps{list-style:none; counter-reset:step; margin:18px 0 0}
+.r-steps li{counter-increment:step; position:relative; padding-left:42px; margin-bottom:18px;
+  font-size:15px; line-height:1.6; color:var(--ink)}
+.r-steps li::before{content:counter(step); position:absolute; left:0; top:-2px; width:28px; height:28px;
+  background:var(--candlelight); border:1px solid var(--blush); border-radius:50%; color:var(--shiraz);
+  font-family:'Newsreader',serif; font-size:15px; display:flex; align-items:center; justify-content:center}
+.r-steps li b{font-weight:600}
+
+.r-link{background:var(--candlelight); border:1px solid var(--line); border-radius:10px;
+  padding:22px 24px; margin:28px 0 0}
+.r-link .lh{font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--lipstick);
+  font-weight:600; margin-bottom:8px}
+.r-link p{font-size:14.5px; color:var(--ink); line-height:1.6; margin-bottom:14px}
+.r-link a.go{display:inline-block; background:transparent; color:var(--shiraz); border:1.5px solid var(--shiraz);
+  border-radius:7px; padding:12px 24px; font-size:14px; font-weight:600; text-decoration:none; transition:all .16s}
+.r-link a.go:hover{background:var(--shiraz); color:var(--linen)}
+
+/* interactive inputs inside start-here */
+.r-fill{margin-top:20px}
+.r-fill .lead{font-family:'Newsreader',serif; font-style:italic; font-size:17px; color:var(--shiraz); margin-bottom:16px; line-height:1.5}
+.r-in{width:100%; font-family:'Inter',sans-serif; font-size:15px; color:var(--ink); background:var(--linen);
+  border:1.5px solid var(--line); border-radius:8px; padding:12px 14px; margin-top:6px; transition:border-color .16s}
+.r-in:focus{outline:none; border-color:var(--shiraz)}
+.r-in::placeholder{color:#bdb4b4; font-style:italic}
+.r-field{margin-bottom:16px}
+.r-field label{display:block; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; font-weight:600; color:var(--shiraz); margin-bottom:2px}
+.r-sentence .seg{font-size:15.5px; color:var(--ink); line-height:1.7; margin-bottom:10px}
+.r-sentence .seg b{font-style:normal; font-weight:600}
+.r-sentence .seg-solo{margin-top:18px; padding-top:18px; border-top:1px dashed var(--line)}
+.r-cols{display:flex; gap:16px; margin-top:4px}
+.r-cols > div{flex:1}
+.r-collabel{font-size:12px; letter-spacing:0.06em; text-transform:uppercase; font-weight:600; color:var(--shiraz); margin-bottom:4px}
+.r-colhint{font-size:12.5px; font-style:italic; color:var(--muted); line-height:1.45; margin-bottom:10px}
+.r-listlabel{font-size:12px; letter-spacing:0.06em; text-transform:uppercase; font-weight:600; color:var(--shiraz); margin:18px 0 8px}
+.r-divider{height:1px; background:var(--line); margin:22px 0 18px}
+@media(max-width:600px){ .r-cols{flex-direction:column; gap:0} }
+
+/* readout plan styles (used by the off-screen PDF node) */
+.ro-lead{font-family:'Newsreader',serif; font-style:italic; color:#7a2435; font-size:16px; margin-bottom:10px}
+.ro-sentence{font-size:17px; line-height:1.9; color:#2a2728}
+.ro-sentence b{font-weight:600; color:#7a2435}
+.ro-action{margin-top:16px; padding-top:16px; border-top:1px dashed #d9d2c6}
+.ro-tab{width:100%; border-collapse:collapse}
+.ro-tab td{padding:8px 0; font-size:15px; vertical-align:top; border-bottom:1px solid #e7e2d8}
+.ro-tab td.k{width:150px; color:#8a8083; font-size:12px; text-transform:uppercase; letter-spacing:0.06em; font-weight:600; padding-top:11px}
+.ro-ol{margin:0 0 0 20px}
+.ro-ol li{font-size:15px; margin-bottom:6px}
+.ro-tab2{width:100%; border-collapse:collapse; table-layout:fixed}
+.ro-tab2 td{padding:10px 12px; font-size:14.5px; vertical-align:top; border:1px solid #e7e2d8; width:50%; line-height:1.9}
+.ro-tab2 td.h{font-size:11px; text-transform:uppercase; letter-spacing:0.06em; font-weight:600; color:#7a2435; background:#fff}
+
+.r-mix{margin:26px 0 0; padding:20px 0 0; border-top:1px dashed var(--line)}
+.r-mix > p{font-size:13.5px; color:var(--muted); font-style:italic; line-height:1.6; margin:0 0 14px}
+.r-mix > p b{color:var(--ink); font-style:normal; font-weight:600}
+.r-mix-toggle{background:transparent; color:var(--shiraz); border:1.5px solid var(--shiraz); border-radius:8px;
+  padding:11px 22px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:all .16s}
+.r-mix-toggle:hover{background:var(--shiraz); color:var(--linen)}
+.r-mix-toggle.open{background:var(--shiraz); color:var(--linen)}
+.r-mix-panel{margin-top:20px; animation:fade .3s ease}
+.r-mix-band{border-radius:12px; padding:24px 26px; margin-bottom:20px; color:var(--candlelight)}
+.r-mix-band.drift{background:var(--shiraz)}
+.r-mix-band.depletion{background:var(--charcoal)}
+.r-mix-band.misalignment{background:#5e1b29}
+.r-mix-kicker{font-family:'Caveat',cursive; font-size:19px; color:var(--blush); margin-bottom:4px}
+.r-mix-name{font-family:'Newsreader',serif; font-size:26px; line-height:1.1; color:var(--linen); margin-bottom:12px}
+.r-mix-desc{font-size:14.5px; color:rgba(243,233,220,0.88); line-height:1.7}
+.r-mix-movehead{font-family:'Newsreader',serif; font-weight:400; font-size:21px; line-height:1.25; color:var(--ink); margin-bottom:6px}
+.r-mix-movehead em{font-style:italic; color:var(--shiraz)}
+
+.r-actions{display:flex; gap:12px; flex-wrap:wrap; margin-top:30px}
+.r-actions .btn.ghost{background:transparent; color:var(--shiraz); border:1.5px solid var(--shiraz)}
+.r-actions .btn.ghost:hover{background:var(--shiraz); color:var(--linen)}
+
+@media(max-width:600px){
+  body{padding:16px 12px 48px}
+  .card{padding:30px 22px; border-radius:12px}
+  .qstem{font-size:21px}
+  .r-actions{flex-direction:column}
+  .r-actions .btn{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+
+  <!-- INTRO -->
+  <section class="screen active" id="intro">
+    <div class="eyebrow">CEO After Dark · Quick Pour Nº 6</div>
+    <h1>The <em>Re-Aim</em> Check</h1>
+    <p class="sub">When you are running on empty, the instinct is to rest, or to burn the whole business down. Sometimes one of those is right. Often neither is. This check works out which kind of empty you are actually in, so you fix the real thing instead of the obvious one. Six honest questions. Two minutes.</p>
+    <div class="start-row">
+      <button class="btn" onclick="start()">Start the check &rarr;</button>
+    </div>
+    <p class="note"><b>One rule:</b> answer for how things have actually felt this past month, not how you wish they felt, and not how they looked on your best day.</p>
+  </section>
+
+  <!-- QUESTIONS -->
+  <section class="screen" id="quiz">
+    <div class="prog" id="prog"></div>
+    <div class="qcount" id="qcount"></div>
+    <div class="qstem" id="qstem"></div>
+    <div class="qhint" id="qhint"></div>
+    <div class="opts" id="opts"></div>
+    <div class="nav">
+      <button class="back" id="backBtn" onclick="back()">&larr; Back</button>
+      <span style="font-size:13px;color:var(--muted)" id="navhint">Pick the closest one</span>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section class="screen" id="result"></section>
+
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// THE RE-AIM CHECK
+// Three kinds of empty. Each question's options map to one of:
+//   drift | depletion | misalignment
+// We tally, then the dominant tally is the diagnosis. Ties resolve in the
+// order drift > misalignment > depletion (drift is the headline case and the
+// one that closes the bottle by pointing back to Pour 1).
+// ---------------------------------------------------------------------------
+
+const QUESTIONS = [
+  {
+    stem: "When you picture where the business is heading right now, what comes up?",
+    hint: "Be honest about the picture, not the plan you wrote in January.",
+    opts: [
+      { t:"drift",        b:"A blur",            d:"I am busy and moving, but I could not tell you what I am moving toward." },
+      { t:"misalignment", b:"A place I can see, but it is not where this is taking me", d:"The destination is clear. The daily work just is not pointed at it." },
+      { t:"depletion",    b:"The right place, I am just too tired to feel it", d:"I know where I am going and I still want it. I am running on fumes getting there." }
+    ]
+  },
+  {
+    stem: "It is Monday morning. What is the feeling?",
+    hint: "The first honest feeling, before the coffee and the to-do list.",
+    opts: [
+      { t:"depletion",    b:"Heavy. I need a week off, not a Monday", d:"The work is fine. My body and brain are not." },
+      { t:"drift",        b:"Flat. What is the point of all this again?", d:"Not tired exactly. Just untethered." },
+      { t:"misalignment", b:"Resistant. I do not want to do THIS work", d:"I have energy. It just is not for what is on today's list." }
+    ]
+  },
+  {
+    stem: "If a fairy godmother gave you a fully-rested, two-week-holiday version of yourself tomorrow, then what?",
+    hint: "Imagine the rest is already done. What is left?",
+    opts: [
+      { t:"depletion",    b:"I would be genuinely fine. I just need the rest", d:"Take away the exhaustion and the problem mostly goes with it." },
+      { t:"drift",        b:"I would still not know what I am building toward", d:"Rested, sure. But the 'why' would still be missing." },
+      { t:"misalignment", b:"I would come back to the same work I have outgrown", d:"Rest does not change that the work itself is wrong for me now." }
+    ]
+  },
+  {
+    stem: "Think about the last time you felt genuinely lit up by your business. When was it?",
+    hint: "An actual memory, not a theory.",
+    opts: [
+      { t:"drift",        b:"I remember it, and I remember why. I have just lost the thread", d:"There was a clear point once. I have drifted from it." },
+      { t:"misalignment", b:"It was doing different work than I do now", d:"The spark was real, but it was for things I have since stopped doing." },
+      { t:"depletion",    b:"Recently, actually, I am just too wrung out to feel it often", d:"The lit-up moments still happen. I do not have the energy to notice them." }
+    ]
+  },
+  {
+    stem: "Which sentence stings the most to read?",
+    hint: "The one that makes you wince is usually the true one.",
+    opts: [
+      { t:"drift",        b:"\u201CI have forgotten what I actually wanted from this.\u201D", d:"" },
+      { t:"depletion",    b:"\u201CI cannot keep running at this pace and stay standing.\u201D", d:"" },
+      { t:"misalignment", b:"\u201CI built a business I do not actually want to run anymore.\u201D", d:"" }
+    ]
+  },
+  {
+    stem: "Be honest: what are you most tempted to do about all this?",
+    hint: "The thing you have been quietly considering.",
+    opts: [
+      { t:"depletion",    b:"Book the holiday. Clear the calendar. Sleep", d:"My instinct is to stop and recover." },
+      { t:"drift",        b:"Find a new goal, a new push, anything to chase", d:"My instinct is to grab a fresh target." },
+      { t:"misalignment", b:"Burn it down and start something different", d:"My instinct is to change what the business actually is." }
+    ]
+  }
+];
+
+const RESULTS = {
+  drift: {
+    kicker: "Your kind of empty is\u2026",
+    name: "Drift",
+    nameEm: "",
+    desc: "You are not burnt out. You have drifted. The engine is still running, you are still doing the work, but somewhere along the way you lost sight of what you were running toward. That missing line of sight is the drain. You cannot feel the pull of a destination you can no longer see, so every task costs more than it should. A holiday will not fix this, because you will come back to the same blur. The fix is not rest. It is re-aiming.",
+    split: "Why not the others? Rest would leave the 'why' still missing. Changing the work would be solving a problem you do not have, your work is probably fine, you have just lost the thread to it.",
+    moveHead: "Your move: <em>reconnect to the endgame</em>",
+    steps: [
+      "<b>Name the drift out loud tonight.</b> Write one sentence: \u201CI started this business so that ______.\u201D If you stall halfway through, that is the drift, located. Do not fix it yet. Just see it.",
+      "<b>Pull your endgame back into view.</b> Find the version of success you defined for yourself, your real number, your real life. If you have never pinned it down, that is the work waiting for you. A defined endgame is the thing every hard day gets measured against.",
+      "<b>Re-aim one decision this week.</b> Take the next real choice on your desk, a client, a price, a yes or no, and hold it up against your endgame instead of your inbox. One re-aimed decision rebuilds the thread faster than a month of rest."
+    ],
+    link: {
+      head: "Start here, tonight",
+      body: "Drift is a sight-line problem, so the fix is to rebuild the sight line. Finish the sentence below in your own words. Do not aim for perfect, aim for honest, and for this season only. When you save your readout, this comes with it. Stick it somewhere you will see it on Monday.",
+      cta: "",
+      url: ""
+    },
+    inputs: {
+      kind: "sentence",
+      lead: "When this business has done its job:",
+      fields: [
+        { id:"drift_life", pre:"My life looks like", ph:"more time with my kids, work that is optional, a slower pace" },
+        { id:"drift_number", pre:"and the number that pays for it is", ph:"$8k a month / $250k a year / whatever buys the life above" },
+        { id:"drift_action", pre:"So the one tiny thing I am going to do tomorrow is", ph:"one small, real step toward that, not the whole plan", solo:true }
+      ]
+    }
+  },
+  depletion: {
+    kicker: "Your kind of empty is\u2026",
+    name: "Depletion",
+    nameEm: "",
+    desc: "This one is refreshingly simple, and you should trust it. Your aim is fine. You know where you are going and you still want it. You are just genuinely, physically, properly empty, and no amount of re-strategising will refill a tank that needs rest, not redirection. The most common mistake here is rewriting your whole vision when all you needed was sleep, food, and a real break. Do not overthink an empty that a fortnight of looking after yourself would mostly solve.",
+    split: "Why not the others? You can still see your endgame clearly and you still want the work, so this is not drift or misalignment. It is the tank, not the map.",
+    moveHead: "Your move: <em>actually stop</em>",
+    steps: [
+      "<b>Schedule the rest like it is a client.</b> Block real recovery time in the calendar this week and defend it the way you would defend a paid commitment. Unprotected rest never happens.",
+      "<b>Name your top three drains.</b> Where is the energy actually going? Often one or two things are quietly emptying you far faster than the rest. You cannot protect your energy until you can see where it leaks.",
+      "<b>Tell one person you are running on empty.</b> Not for advice, just so it is said out loud to someone who is not in your own head. Running a business alone is the fastest route to burnout, and the women who last are the ones who do not white-knuckle it in silence."
+    ],
+    link: {
+      head: "Start here, tonight",
+      body: "Depletion does not get fixed by reading about depletion. Name the recovery you are actually booking and the three things draining you most. When you save your readout, this booking goes with it, in writing, which is the difference between rest you mean to take and rest you take. Then put it in your calendar before you close this.",
+      cta: "",
+      url: ""
+    },
+    inputs: {
+      kind: "fields",
+      lead: "The recovery I am booking this week:",
+      fields: [
+        { id:"dep_what", label:"What it is", ph:"a half-day off, an early night, a cleared Friday afternoon" },
+        { id:"dep_when", label:"When (day and time)", ph:"Thursday from 2pm / Sunday morning, no laptop" }
+      ],
+      listLabel: "My top three drains right now:",
+      list: [
+        { id:"dep_drain1", ph:"the drain taking the most out of you" },
+        { id:"dep_drain2", ph:"the second" },
+        { id:"dep_drain3", ph:"the third" }
+      ]
+    }
+  },
+  misalignment: {
+    kicker: "Your kind of empty is\u2026",
+    name: "Misalignment",
+    nameEm: "",
+    desc: "You can see your endgame perfectly clearly, and the problem is that your daily work no longer points at it. You have changed, or your goal has, and the business has not caught up. This is the trickiest empty because it disguises itself as both the others: it feels like exhaustion (it is not, rest will not touch it) and it feels like lost motivation (it is not, your motivation is intact, it just has nowhere useful to go). The fix is not more stamina. It is changing the work so it aims where you already know you are going.",
+    split: "Why not the others? You can name your endgame, so this is not drift. And rest will not help, because you would return to the same misaligned work, so this is not depletion.",
+    moveHead: "Your move: <em>realign the work</em>",
+    steps: [
+      "<b>Map the gap.</b> Write your endgame on the left, your typical week on the right. Draw a line between anything that genuinely connects. The unconnected items on the right are your misalignment, made visible.",
+      "<b>Pick the single biggest mismatch.</b> One offer, one client type, one activity that eats your week and points nowhere near your endgame. You do not have to fix all of it. Name the worst one.",
+      "<b>Change one thing structurally, not just harder.</b> Raise the price, retire the offer, hand off the task, or reshape the week. Misalignment is a design problem, so it needs a design change, not more willpower."
+    ],
+    link: {
+      head: "Start here, tonight",
+      body: "Misalignment hides until you put it on paper, so put it on paper here. On the left, what you are building toward, the aim at whatever height you can name tonight. On the right, the things that actually ate your week. The mismatch between the two columns is the misalignment. Then name the single worst offender and the one structural change you will make to it. When you save your readout, the whole map comes with it.",
+      cta: "",
+      url: ""
+    },
+    inputs: {
+      kind: "twocol",
+      lead: "The gap map:",
+      leftLabel: "What I am building toward",
+      leftHint: "The aim, at whatever height you can name tonight: the life, the outcome, even just a calmer season. Not a task.",
+      rightLabel: "What ate my week",
+      rightHint: "The actual activities. Where the hours really went.",
+      left: [
+        { id:"mis_aim1", ph:"a business that runs without me in the room" },
+        { id:"mis_aim2", ph:"work that fits around the life I want" }
+      ],
+      right: [
+        { id:"mis_week1", ph:"bespoke client work" },
+        { id:"mis_week2", ph:"my own admin and bookkeeping" },
+        { id:"mis_week3", ph:"that one demanding account" }
+      ],
+      decide: [
+        { id:"mis_worst", label:"The single worst offender", ph:"the one that eats the most and serves the aim least" },
+        { id:"mis_change", label:"The one structural change I will make", ph:"raise its price / retire it / hand it off / cut it" }
+      ]
+    }
+  }
+};
+
+let current = 0;
+const answers = new Array(QUESTIONS.length).fill(null);
+
+function start(){
+  current = 0;
+  show('quiz');
+  renderQ();
+}
+
+function renderProg(){
+  const p = document.getElementById('prog');
+  p.innerHTML = '';
+  QUESTIONS.forEach((_,i)=>{
+    const s = document.createElement('span');
+    if(i <= current) s.className = 'on';
+    p.appendChild(s);
+  });
+}
+
+function renderQ(){
+  const q = QUESTIONS[current];
+  renderProg();
+  document.getElementById('qcount').textContent = 'Question ' + (current+1) + ' of ' + QUESTIONS.length;
+  document.getElementById('qstem').textContent = q.stem;
+  document.getElementById('qhint').textContent = q.hint;
+  const wrap = document.getElementById('opts');
+  wrap.innerHTML = '';
+  q.opts.forEach((o, idx)=>{
+    const b = document.createElement('button');
+    b.className = 'opt' + (answers[current] === idx ? ' sel' : '');
+    b.innerHTML = '<b>' + o.b + '</b>' + (o.d ? '<span>' + o.d + '</span>' : '');
+    b.onclick = ()=>pick(idx);
+    wrap.appendChild(b);
+  });
+  document.getElementById('backBtn').className = 'back' + (current === 0 ? ' hide' : '');
+  document.getElementById('navhint').textContent = answers[current] === null ? 'Pick the closest one' : 'Loading next\u2026';
+}
+
+function pick(idx){
+  answers[current] = idx;
+  // brief visual settle, then advance
+  renderQ();
+  setTimeout(()=>{
+    if(current < QUESTIONS.length - 1){
+      current++;
+      renderQ();
+    } else {
+      finish();
+    }
+  }, 260);
+}
+
+function back(){
+  if(current > 0){ current--; renderQ(); }
+}
+
+function finish(){
+  const tally = { drift:0, depletion:0, misalignment:0 };
+  answers.forEach((a,i)=>{ if(a!==null) tally[QUESTIONS[i].opts[a].t]++; });
+  // dominant, tie-break order: drift > misalignment > depletion
+  const order = ['drift','misalignment','depletion'];
+  let best = order[0];
+  order.forEach(k=>{ if(tally[k] > tally[best]) best = k; });
+  // detect a meaningful secondary (mix) signal: only when the runner-up is
+  // close behind the winner (within 1) and has real weight (>=2 of 6).
+  const sorted = Object.entries(tally).sort((a,b)=>b[1]-a[1]);
+  const secondary = (sorted[1][1] >= 2 && (sorted[0][1] - sorted[1][1]) <= 1 && sorted[1][0] !== best) ? sorted[1][0] : null;
+  renderResult(best, secondary, tally);
+}
+
+function buildInputsHTML(inp){
+  if(!inp) return '';
+  let h = '<div class="r-fill">';
+  if(inp.lead) h += '<div class="lead">' + inp.lead + '</div>';
+
+  if(inp.kind === 'sentence'){
+    h += '<div class="r-sentence">';
+    inp.fields.forEach(f=>{
+      h += '<div class="seg' + (f.solo ? ' seg-solo' : '') + '"><b>' + f.pre + '</b><input class="r-in" id="' + f.id + '" placeholder="' + f.ph + '"></div>';
+    });
+    h += '</div>';
+  }
+  else if(inp.kind === 'fields'){
+    inp.fields.forEach(f=>{
+      h += '<div class="r-field"><label>' + f.label + '</label><input class="r-in" id="' + f.id + '" placeholder="' + f.ph + '"></div>';
+    });
+    if(inp.list){
+      h += '<div class="r-listlabel">' + inp.listLabel + '</div>';
+      inp.list.forEach(f=>{
+        h += '<input class="r-in" id="' + f.id + '" placeholder="' + f.ph + '" style="margin-bottom:8px">';
+      });
+    }
+  }
+  else if(inp.kind === 'twocol'){
+    h += '<div class="r-cols"><div><div class="r-collabel">' + inp.leftLabel + '</div>' +
+         (inp.leftHint ? '<div class="r-colhint">' + inp.leftHint + '</div>' : '');
+    inp.left.forEach(f=>{ h += '<input class="r-in" id="' + f.id + '" placeholder="' + f.ph + '" style="margin-bottom:8px">'; });
+    h += '</div><div><div class="r-collabel">' + inp.rightLabel + '</div>' +
+         (inp.rightHint ? '<div class="r-colhint">' + inp.rightHint + '</div>' : '');
+    inp.right.forEach(f=>{ h += '<input class="r-in" id="' + f.id + '" placeholder="' + f.ph + '" style="margin-bottom:8px">'; });
+    h += '</div></div>';
+    h += '<div class="r-divider"></div>';
+    inp.decide.forEach(f=>{
+      h += '<div class="r-field"><label>' + f.label + '</label><input class="r-in" id="' + f.id + '" placeholder="' + f.ph + '"></div>';
+    });
+  }
+  h += '</div>';
+  return h;
+}
+
+function renderResult(key, secondary, tally){
+  const r = RESULTS[key];
+  const labels = { drift:'Drift', depletion:'Depletion', misalignment:'Misalignment' };
+  let mix = '';
+  if(secondary){
+    const s = RESULTS[secondary];
+    const sStepsHTML = s.steps.map(st=>'<li>'+st+'</li>').join('');
+    mix =
+      '<div class="r-mix"><p><b>One note:</b> you also scored highly on ' + labels[secondary] +
+      '. That is common, these empties overlap. Start with ' + r.name +
+      ', it is your strongest signal. But if you want the ' + labels[secondary] +
+      ' fix too, here it is.</p>' +
+      '<button class="r-mix-toggle" id="mixToggle" onclick="toggleSecondary()">Show me the ' + labels[secondary] + ' fix too &darr;</button>' +
+      '<div class="r-mix-panel" id="mixPanel" hidden>' +
+        '<div class="r-mix-band ' + secondary + '">' +
+          '<div class="r-mix-kicker">The other empty</div>' +
+          '<div class="r-mix-name">' + s.name + '</div>' +
+          '<div class="r-mix-desc">' + s.desc + '</div>' +
+        '</div>' +
+        '<div class="r-mix-movehead">' + s.moveHead + '</div>' +
+        '<ol class="r-steps">' + sStepsHTML + '</ol>' +
+      '</div></div>';
+  }
+  const html =
+    '<div class="r-eyebrow">Your Re-Aim Check result</div>' +
+    '<div class="r-band ' + key + '">' +
+      '<div class="r-kicker">' + r.kicker + '</div>' +
+      '<div class="r-name">' + r.name + '</div>' +
+      '<div class="r-desc">' + r.desc + '</div>' +
+      '<div class="r-split">' + r.split + '</div>' +
+    '</div>' +
+    '<div class="r-move">' +
+      '<div class="small-head">What to do about it</div>' +
+      '<h3>' + r.moveHead + '</h3>' +
+      '<ol class="r-steps">' + r.steps.map(s=>'<li>'+s+'</li>').join('') + '</ol>' +
+    '</div>' +
+    '<div class="r-link">' +
+      '<div class="lh">' + r.link.head + '</div>' +
+      '<p>' + r.link.body + '</p>' +
+      buildInputsHTML(r.inputs) +
+    '</div>' +
+    mix +
+    '<div class="r-actions">' +
+      '<button class="btn" onclick="downloadReadout(\'' + key + '\')">Download my readout &rarr;</button>' +
+      '<button class="btn ghost" onclick="restart()">Run it again</button>' +
+    '</div>';
+  document.getElementById('result').innerHTML = html;
+  show('result');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// pull current input values for a given result key
+function collectInputs(key){
+  const inp = RESULTS[key].inputs;
+  const vals = {};
+  if(!inp) return vals;
+  const ids = [];
+  if(inp.fields) inp.fields.forEach(f=>ids.push(f.id));
+  if(inp.list) inp.list.forEach(f=>ids.push(f.id));
+  if(inp.left) inp.left.forEach(f=>ids.push(f.id));
+  if(inp.right) inp.right.forEach(f=>ids.push(f.id));
+  if(inp.decide) inp.decide.forEach(f=>ids.push(f.id));
+  ids.forEach(id=>{ const el = document.getElementById(id); vals[id] = el ? el.value.trim() : ''; });
+  return vals;
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function line(v){ return v && v.length ? esc(v) : '<span style="color:#bdb4b4">__________</span>'; }
+
+// build the personalised "your plan" section for the readout
+function buildPlanHTML(key, v){
+  if(key === 'drift'){
+    return '<p class="ro-lead">When this business has done its job:</p>' +
+      '<p class="ro-sentence">My life looks like <b>' + line(v.drift_life) + '</b>,<br>' +
+      'and the number that pays for it is <b>' + line(v.drift_number) + '</b>.</p>' +
+      '<p class="ro-sentence ro-action">So the one tiny thing I am going to do tomorrow is <b>' + line(v.drift_action) + '</b>.</p>';
+  }
+  if(key === 'depletion'){
+    return '<p class="ro-lead">The recovery I am booking this week:</p>' +
+      '<table class="ro-tab"><tr><td class="k">What it is</td><td>' + line(v.dep_what) + '</td></tr>' +
+      '<tr><td class="k">When</td><td>' + line(v.dep_when) + '</td></tr></table>' +
+      '<p class="ro-lead" style="margin-top:18px">My top three drains right now:</p>' +
+      '<ol class="ro-ol"><li>' + line(v.dep_drain1) + '</li><li>' + line(v.dep_drain2) + '</li><li>' + line(v.dep_drain3) + '</li></ol>';
+  }
+  if(key === 'misalignment'){
+    return '<p class="ro-lead">The gap map:</p>' +
+      '<table class="ro-tab2"><tr><td class="h">What I am building toward</td><td class="h">What ate my week</td></tr>' +
+      '<tr><td>' + line(v.mis_aim1) + '<br>' + line(v.mis_aim2) + '</td>' +
+      '<td>' + line(v.mis_week1) + '<br>' + line(v.mis_week2) + '<br>' + line(v.mis_week3) + '</td></tr></table>' +
+      '<table class="ro-tab" style="margin-top:16px"><tr><td class="k">Worst offender</td><td>' + line(v.mis_worst) + '</td></tr>' +
+      '<tr><td class="k">My one change</td><td>' + line(v.mis_change) + '</td></tr></table>';
+  }
+  return '';
+}
+
+function downloadReadout(key){
+  const r = RESULTS[key];
+  const v = collectInputs(key);
+  const labels = { drift:'Drift', depletion:'Depletion', misalignment:'Misalignment' };
+  const stepsHTML = r.steps.map(s=>'<li>'+s+'</li>').join('');
+  const planHTML = buildPlanHTML(key, v);
+  const today = new Date().toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' });
+
+  const btn = document.querySelector('.r-actions .btn');
+  const btnLabel = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = 'Building your PDF\u2026'; btn.disabled = true; }
+
+  // Build the readout markup into an off-screen node at a fixed page width,
+  // using the fonts already loaded on this page, then snapshot to PDF.
+  const PAGE_W = 794; // px, ~A4 width at 96dpi
+  const node = document.createElement('div');
+  node.setAttribute('style',
+    'position:fixed; left:-9999px; top:0; width:' + PAGE_W + 'px; background:#ffffff; ' +
+    'font-family:Inter,sans-serif; color:#2a2728; line-height:1.6;');
+  node.innerHTML =
+    '<div style="padding:56px 52px">' +
+      '<div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#b8455a;font-weight:600;margin-bottom:10px">CEO After Dark &middot; Quick Pour N\u00ba 6 &middot; The Re-Aim Check</div>' +
+      '<div style="font-family:Newsreader,serif;font-weight:400;font-size:40px;line-height:1.1;color:#2a2728;margin-bottom:6px">Your <em style="font-style:italic;color:#7a2435">Re-Aim</em> readout</div>' +
+      '<div style="font-size:13px;color:#8a8083;margin-bottom:30px">' + today + '</div>' +
+      '<div class="pdf-band" style="background:' + bandColour(key) + ';color:#f3e9dc;border-radius:12px;padding:30px 32px;margin-bottom:28px">' +
+        '<div style="font-style:italic;font-family:Newsreader,serif;color:#e2b5b0;font-size:17px;margin-bottom:4px">Your kind of empty is</div>' +
+        '<div style="font-family:Newsreader,serif;font-size:32px;color:#ffffff;margin-bottom:14px">' + r.name + '</div>' +
+        '<div style="font-size:14.5px;color:rgba(243,233,220,0.92);line-height:1.7">' + r.desc + '</div>' +
+      '</div>' +
+      '<div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#7a2435;font-weight:600;margin:30px 0 12px">What to do about it</div>' +
+      '<div style="font-family:Newsreader,serif;font-weight:400;font-size:24px;color:#2a2728;margin-bottom:16px">' + r.moveHead + '</div>' +
+      '<ol style="margin:0 0 8px 22px;padding:0">' + r.steps.map(s=>'<li style="margin-bottom:13px;font-size:14.5px;padding-left:6px;line-height:1.6">'+s+'</li>').join('') + '</ol>' +
+      '<div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#7a2435;font-weight:600;margin:30px 0 12px">' + r.link.head + '</div>' +
+      '<div style="background:#f3e9dc;border:1px solid #e7e2d8;border-radius:12px;padding:28px 30px">' + planHTML + '</div>' +
+      '<div style="margin-top:40px;padding-top:18px;border-top:1px solid #e7e2d8;font-size:12px;color:#8a8083;font-style:italic">The Re-Aim Check, from CEO After Dark by SPARK. Run it again on the next hard night.</div>' +
+    '</div>';
+  document.body.appendChild(node);
+
+  const finish = ()=>{
+    document.body.removeChild(node);
+    if(btn){ btn.textContent = btnLabel; btn.disabled = false; }
+  };
+
+  const run = ()=>{
+    html2canvas(node, { scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false })
+      .then(canvas=>{
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pw = pdf.internal.pageSize.getWidth();
+        const ph = pdf.internal.pageSize.getHeight();
+        const imgW = pw;
+        const imgH = canvas.height * pw / canvas.width;
+        const img = canvas.toDataURL('image/jpeg', 0.95);
+        const TOL = 4; // mm: ignore a sliver of white margin
+        if(imgH <= ph + TOL){
+          // fits on a single page as-is
+          pdf.addImage(img, 'JPEG', 0, 0, imgW, imgH);
+        } else if(imgH <= ph * 1.18){
+          // marginally over: scale down slightly to keep it a clean one-pager
+          const scale = ph / imgH;
+          const w = imgW * scale;
+          const x = (pw - w) / 2;
+          pdf.addImage(img, 'JPEG', x, 0, w, ph);
+        } else {
+          // genuinely long: paginate
+          let left = imgH;
+          let pos = 0;
+          pdf.addImage(img, 'JPEG', 0, pos, imgW, imgH);
+          left -= ph;
+          while(left > TOL){
+            pos -= ph;
+            pdf.addPage();
+            pdf.addImage(img, 'JPEG', 0, pos, imgW, imgH);
+            left -= ph;
+          }
+        }
+        pdf.save('My-Re-Aim-Readout-' + labels[key] + '.pdf');
+        finish();
+      })
+      .catch(err=>{
+        console.error('PDF generation failed:', err);
+        finish();
+        // graceful fallback: open a printable version
+        const w = window.open('', '_blank');
+        if(w){ w.document.write(node ? node.innerHTML : ''); w.document.close(); w.print(); }
+      });
+  };
+
+  // give the off-screen fonts a beat to settle, then render
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(()=>setTimeout(run, 120));
+  } else {
+    setTimeout(run, 300);
+  }
+}
+
+function bandColour(key){
+  return key === 'depletion' ? '#333031' : (key === 'misalignment' ? '#5e1b29' : '#7a2435');
+}
+
+function toggleSecondary(){
+  const panel = document.getElementById('mixPanel');
+  const toggle = document.getElementById('mixToggle');
+  if(!panel || !toggle) return;
+  const open = panel.hidden === false;
+  if(open){
+    panel.hidden = true;
+    toggle.classList.remove('open');
+    toggle.innerHTML = toggle.innerHTML.replace('Hide the', 'Show me the').replace('\u2191', '\u2193');
+  } else {
+    panel.hidden = false;
+    toggle.classList.add('open');
+    toggle.innerHTML = toggle.innerHTML.replace('Show me the', 'Hide the').replace('\u2193', '\u2191');
+  }
+}
+
+function restart(){
+  answers.fill(null);
+  current = 0;
+  show('intro');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
